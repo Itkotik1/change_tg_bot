@@ -13,3 +13,7 @@ menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Кофе', callback_data='coffee')],
     [InlineKeyboardButton(text='Не кофе', callback_data='not coffee')],
     [InlineKeyboardButton(text='Выпечка', callback_data='bakery')]])
+
+get_number= ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Отправь номер',
+                                                        request_contact=True)]],
+                               resize_keyboard=True)

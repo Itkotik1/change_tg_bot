@@ -27,3 +27,14 @@ async def menu(message: Message):
 async def coffee(callback: CallbackQuery):
     await callback.answer('Вы выбрали категорию')
     await callback.message.answer('Вы выбрали категорию кофе')
+
+@router.callback_query(F.data == 'not coffee')
+async def coffee(callback: CallbackQuery):
+    await callback.answer('Вы выбрали категорию')
+    await callback.message.answer('Вы выбрали категорию не кофе')
+
+@router.callback_query(F.data == 'bakery')
+async def coffee(callback: CallbackQuery):
+    await callback.answer('Вы выбрали категорию')
+    await callback.message.answer('Вы выбрали категорию выпечка')
+

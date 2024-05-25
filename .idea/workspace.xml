@@ -4,14 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8857a5f7-73f6-4d31-8d73-04646a75478c" name="Changes" comment="Добавили начальный функционал">
-      <change afterPath="$PROJECT_DIR$/app/database/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/database/requests.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/change_tg_bot.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/change_tg_bot.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="8857a5f7-73f6-4d31-8d73-04646a75478c" name="Changes" comment="Добавила сохранение tg id">
+      <change afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sqlite/sqlite.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/database/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/database/requests.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/app/handlers.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/keyboards.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/keyboards.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -59,6 +58,7 @@
   "keyToString": {
     "ASKED_ADD_EXTERNAL_FILES": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "itkotik",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -86,7 +86,9 @@
       <updated>1716456505867</updated>
       <workItem from="1716456506477" duration="6062000" />
       <workItem from="1716491349309" duration="474000" />
-      <workItem from="1716555453352" duration="5537000" />
+      <workItem from="1716555453352" duration="5583000" />
+      <workItem from="1716579843588" duration="239000" />
+      <workItem from="1716623462456" duration="6975000" />
     </task>
     <task id="LOCAL-00001" summary="добавила callback для категорий не кофе и выпечка">
       <option name="closed" value="true" />
@@ -96,7 +98,15 @@
       <option name="project" value="LOCAL" />
       <updated>1716466665975</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Добавила сохранение tg id">
+      <option name="closed" value="true" />
+      <created>1716561184190</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1716561184190</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -115,6 +125,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="добавила callback для категорий не кофе и выпечка" />
-    <option name="LAST_COMMIT_MESSAGE" value="добавила callback для категорий не кофе и выпечка" />
+    <MESSAGE value="Добавила сохранение tg id" />
+    <option name="LAST_COMMIT_MESSAGE" value="Добавила сохранение tg id" />
   </component>
 </project>

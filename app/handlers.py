@@ -23,7 +23,12 @@ async def cmd_start(message: Message):
 
 @router.message(Command('help'))
 async def cmd_help(message: Message):
-    await message.answer('Вы нажали на кнопку помощи!')
+    await message.answer(f'Вы нажали на кнопку помощи!  Вот команды для выбора действий: '
+                         """
+                         /register - регистрация
+                         /help - список команд для выполнения действий
+                         /catalog - раздел с  информацией 
+                         """)
 
 @router.message(Command('catalog'))
 async def cmd_help(message: Message):

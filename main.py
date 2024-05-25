@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher
 from app.handlers import router
-from sqlite.sqlite import db_start
+from sqlite.database import db_start
 
 
 async def main():

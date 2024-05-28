@@ -17,7 +17,9 @@ class Register(StatesGroup):
 @router.message(CommandStart())
 async def cmd_start(message: types.Message):
     await message.answer(f'Добро пожаловать, {message.from_user.first_name}.\n'
-                         f'Вас приветствует телеграмм-бот кофейни-пекарни "Перемена".')
+                         f'Вас приветствует телеграмм-бот кофейни-пекарни "Перемена".\n'
+                         f'Давайте познакомимся? Ведь приятно, когда обращаются по имени!\n'
+                         f'Нажмите на /register')
 
 @router.message(Command('help'))
 async def cmd_help(message: types.Message):

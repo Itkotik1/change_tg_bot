@@ -1,0 +1,602 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import asyncio\r\nfrom aiogram import Bot, Dispatcher\r\nfrom app.handlers import router\r\nfrom sqlite.sqlite import db_start\r\n\r\n\r\nasync def main():\r\n    await db_start()\r\n    bot = Bot(token='6706240861:AAFIFHd1dOzdmUySZ-miKAtbwrpRVRUcCvw')\r\n    dp = Dispatcher()\r\n    dp.include_router(router)\r\n    await dp.start_polling(bot)\r\n\r\nif __name__ == '__main__':\r\n    try:\r\n        asyncio.run(main())\r\n    except KeyboardInterrupt:\r\n        print('Бот выключен')\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	(revision 3cc966dbfe0baa757d8a3fe44d9845082d9819bd)
++++ b/main.py	(date 1716664313809)
+@@ -1,7 +1,7 @@
+ import asyncio
+ from aiogram import Bot, Dispatcher
+ from app.handlers import router
+-from sqlite.sqlite import db_start
++from sqlite.database import db_start
+ 
+ 
+ async def main():
+Index: app/handlers.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from aiogram import F, Router, Dispatcher\r\nfrom aiogram.types import Message, CallbackQuery\r\nfrom aiogram.filters import CommandStart, Command\r\nfrom aiogram.fsm.state import State, StatesGroup\r\nfrom aiogram.fsm.context import FSMContext\r\n\r\nimport app.keyboards as kb\r\nfrom sqlite.sqlite import db_start, create_profile, save_to_db\r\n\r\nrouter = Router()\r\n\r\nclass Register(StatesGroup):\r\n    name = State()\r\n    age = State()\r\n    phone_number = State()\r\n\r\n@router.message(CommandStart())\r\nasync def cmd_start(message: Message):\r\n    await message.answer(f'Добро пожаловать, {message.from_user.first_name} !'\r\n                         f' Вас приветствует телеграмм-бот кофейни-пекарни \"Перемена\".')\r\n\r\n\r\n\r\n@router.message(Command('help'))\r\nasync def cmd_help(message: Message):\r\n    await message.answer('Вы нажали на кнопку помощи!')\r\n\r\n@router.message(Command('catalog'))\r\nasync def cmd_help(message: Message):\r\n    await message.answer(f'Выберите интересующий вас раздел \uD83D\uDC47', reply_markup=kb.main)\r\n\r\n@router.message(F.text == 'Меню')\r\nasync def menu(message: Message):\r\n    await message.answer('Сделайте выбор: ', reply_markup=kb.menu)\r\n\r\n@router.callback_query(F.data == 'coffee')\r\nasync def coffee(callback: CallbackQuery):\r\n    await callback.answer('Вы выбрали категорию')\r\n    await callback.message.answer('Вы выбрали категорию кофе')\r\n\r\n@router.callback_query(F.data == 'not coffee')\r\nasync def coffee(callback: CallbackQuery):\r\n    await callback.answer('Вы выбрали категорию')\r\n    await callback.message.answer('Вы выбрали категорию не кофе')\r\n\r\n@router.callback_query(F.data == 'bakery')\r\nasync def coffee(callback: CallbackQuery):\r\n    await callback.answer('Вы выбрали категорию')\r\n    await callback.message.answer('Вы выбрали категорию выпечка')\r\n\r\n@router.message(Command('register'))\r\nasync def register(message: Message, state: FSMContext):\r\n    await create_profile(user_id=message.from_user.id)\r\n    await state.set_state(Register.name)\r\n    await message.answer('Введите ваше имя')\r\n\r\n\r\n@router.message(Register.name)\r\nasync def register_name(message: Message, state: FSMContext):\r\n    await state.update_data(name=message.text)\r\n    await state.set_state(Register.age)\r\n    await message.answer('Введите ваш возраст')\r\n\r\n\r\n@router.message(Register.age)\r\nasync def register_age(message: Message, state: FSMContext):\r\n    await state.update_data(age=message.text)\r\n    await state.set_state(Register.phone_number)\r\n    await message.answer('Отправьте ваш номер телефона', reply_markup=kb.get_number)\r\n\r\n\r\n@router.message(Register.phone_number, F.contact)\r\nasync def register_number(message: Message, state: FSMContext):\r\n    await state.update_data(phone_number=message.contact.phone_number)\r\n    data = await state.get_data()\r\n    await message.answer(f'Ваше имя: {data[\"name\"]}\\nВаш возраст: {data[\"age\"]}\\nВаш номер телефона: {data[\"phone_number\"]}\\n')\r\n    await save_to_db(data)\r\n    await state.clear()\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/handlers.py b/app/handlers.py
+--- a/app/handlers.py	(revision 3cc966dbfe0baa757d8a3fe44d9845082d9819bd)
++++ b/app/handlers.py	(date 1716664313808)
+@@ -1,11 +1,11 @@
+-from aiogram import F, Router, Dispatcher
++from aiogram import F, Router, Dispatcher, types
+ from aiogram.types import Message, CallbackQuery
+ from aiogram.filters import CommandStart, Command
+ from aiogram.fsm.state import State, StatesGroup
+ from aiogram.fsm.context import FSMContext
+ 
+ import app.keyboards as kb
+-from sqlite.sqlite import db_start, create_profile, save_to_db
++from sqlite.database import db_start, register_or_update_user
+ 
+ router = Router()
+ 
+@@ -15,65 +15,62 @@
+     phone_number = State()
+ 
+ @router.message(CommandStart())
+-async def cmd_start(message: Message):
+-    await message.answer(f'Добро пожаловать, {message.from_user.first_name} !'
+-                         f' Вас приветствует телеграмм-бот кофейни-пекарни "Перемена".')
++async def cmd_start(message: types.Message):
++    await message.answer(f'Добро пожаловать, {message.from_user.first_name}.\n'
++                         f'Вас приветствует телеграмм-бот кофейни-пекарни "Перемена".')
+ 
+-
+-
+ @router.message(Command('help'))
+-async def cmd_help(message: Message):
+-    await message.answer('Вы нажали на кнопку помощи!')
++async def cmd_help(message: types.Message):
++    await message.answer(f'Вы нажали на кнопку помощи  Вот команды для выбора действий: '
++                         "/register - регистрация\n"
++                         "/help - список команд для выполнения действий\n"
++                         "/catalog - раздел с информацией")
+ 
+ @router.message(Command('catalog'))
+-async def cmd_help(message: Message):
++async def cmd_catalog(message: types.Message):
+     await message.answer(f'Выберите интересующий вас раздел 👇', reply_markup=kb.main)
+ 
+ @router.message(F.text == 'Меню')
+-async def menu(message: Message):
++async def menu(message: types.Message):
+     await message.answer('Сделайте выбор: ', reply_markup=kb.menu)
+ 
+ @router.callback_query(F.data == 'coffee')
+-async def coffee(callback: CallbackQuery):
++async def coffee_callback(callback: types.CallbackQuery):
+     await callback.answer('Вы выбрали категорию')
+     await callback.message.answer('Вы выбрали категорию кофе')
+ 
+ @router.callback_query(F.data == 'not coffee')
+-async def coffee(callback: CallbackQuery):
++async def not_coffee_callback(callback: types.CallbackQuery):
+     await callback.answer('Вы выбрали категорию')
+     await callback.message.answer('Вы выбрали категорию не кофе')
+ 
+ @router.callback_query(F.data == 'bakery')
+-async def coffee(callback: CallbackQuery):
++async def bakery_callback(callback: types.CallbackQuery):
+     await callback.answer('Вы выбрали категорию')
+     await callback.message.answer('Вы выбрали категорию выпечка')
+ 
+ @router.message(Command('register'))
+-async def register(message: Message, state: FSMContext):
+-    await create_profile(user_id=message.from_user.id)
++async def register(message: types.Message, state: FSMContext):
+     await state.set_state(Register.name)
+     await message.answer('Введите ваше имя')
+ 
+-
+ @router.message(Register.name)
+-async def register_name(message: Message, state: FSMContext):
++async def register_name(message: types.Message, state: FSMContext):
+     await state.update_data(name=message.text)
+     await state.set_state(Register.age)
+     await message.answer('Введите ваш возраст')
+ 
+-
+ @router.message(Register.age)
+-async def register_age(message: Message, state: FSMContext):
+-    await state.update_data(age=message.text)
++async def register_age(message: types.Message, state: FSMContext):
++    await state.update_data(age=int(message.text))
+     await state.set_state(Register.phone_number)
+     await message.answer('Отправьте ваш номер телефона', reply_markup=kb.get_number)
+ 
+-
+ @router.message(Register.phone_number, F.contact)
+ async def register_number(message: Message, state: FSMContext):
+     await state.update_data(phone_number=message.contact.phone_number)
+     data = await state.get_data()
+     await message.answer(f'Ваше имя: {data["name"]}\nВаш возраст: {data["age"]}\nВаш номер телефона: {data["phone_number"]}\n')
+-    await save_to_db(data)
+-    await state.clear()
+-
++    await register_or_update_user(user_id=message.from_user.id, name=data['name'], age=data['age'], phone_number=data['phone_number'])
++    await message.reply('Вы успешно зарегистрировались!')
++    await state.clear()
+\ No newline at end of file
+Index: sqlite/sqlite.py
+===================================================================
+diff --git a/sqlite/sqlite.py b/sqlite/sqlite.py
+deleted file mode 100644
+--- a/sqlite/sqlite.py	(revision 3cc966dbfe0baa757d8a3fe44d9845082d9819bd)
++++ /dev/null	(revision 3cc966dbfe0baa757d8a3fe44d9845082d9819bd)
+@@ -1,33 +0,0 @@
+-import asyncio
+-import aiosqlite
+-
+-async def db_start():
+-    async with aiosqlite.connect('new.db') as db:
+-        await db.execute("""
+-            CREATE TABLE IF NOT EXISTS profile (
+-                user_id TEXT PRIMARY KEY,
+-                name TEXT,
+-                age TEXT,
+-                phone_number TEXT
+-            )
+-        """)
+-        await db.commit()
+-
+-async def create_profile(user_id):
+-    async with aiosqlite.connect('new.db') as db:
+-        cursor = await db.cursor()
+-        user = await cursor.execute("SELECT 1 FROM profile WHERE user_id=?", (user_id,))
+-        result = await user.fetchone()
+-        if not result:
+-            await cursor.execute("INSERT INTO profile VALUES (?,?,?,?)",
+-                                 (user_id, '', '', ''))
+-            await db.commit()
+-
+-async def save_to_db(data):
+-    async with aiosqlite.connect('new.db') as db:
+-        await db.execute('''CREATE TABLE IF NOT EXISTS users
+-                            (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+-                             name TEXT, age INTEGER, phone_number TEXT)''')
+-        await db.execute('''INSERT INTO users (name, age, phone_number) VALUES (?,?,?)''',
+-                          (data['name'], data['age'], data['phone_number']))
+-        await db.commit()
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30__Changes_.xml
+new file mode 100644
+--- /dev/null	(date 1716664313806)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30__Changes_.xml	(date 1716664313806)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Update_at_25_05_2024_16_30_[Changes]" date="1716643814014" recycled="true" deleted="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Update at 25.05.2024 16:30 [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"8857a5f7-73f6-4d31-8d73-04646a75478c\" name=\"Changes\" comment=\"Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!\" />\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Python Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"master\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;sergeesha&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/Itkotik1/change_tg_bot.git&quot;,\r\n    &quot;accountId&quot;: &quot;eaf99802-8647-44df-9baa-a8f47de47c39&quot;\r\n  }\r\n}</component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 1\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2grX7fsU7eAnChkIvIAH71lrlIG\" />\r\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"ASKED_ADD_EXTERNAL_FILES\": \"true\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"SHARE_PROJECT_CONFIGURATION_FILES\": \"true\",\r\n    \"git-widget-placeholder\": \"itkotik\",\r\n    \"node.js.detected.package.eslint\": \"true\",\r\n    \"node.js.detected.package.tslint\": \"true\",\r\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\r\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\r\n    \"nodejs_package_manager_path\": \"npm\",\r\n    \"vue.rearranger.settings.migration\": \"true\"\r\n  }\r\n}]]></component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-PY-241.14494.241\" />\r\n        <option value=\"bundled-python-sdk-0509580d9d50-28c9f5db9ffe-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.14494.241\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"8857a5f7-73f6-4d31-8d73-04646a75478c\" name=\"Changes\" comment=\"\" />\r\n      <created>1716456505867</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1716456505867</updated>\r\n      <workItem from=\"1716456506477\" duration=\"6062000\" />\r\n      <workItem from=\"1716491349309\" duration=\"474000\" />\r\n      <workItem from=\"1716555453352\" duration=\"5583000\" />\r\n      <workItem from=\"1716579843588\" duration=\"239000\" />\r\n      <workItem from=\"1716623462456\" duration=\"7339000\" />\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"добавила callback для категорий не кофе и выпечка\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1716466665975</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1716466665975</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"Добавила сохранение tg id\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1716561184190</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1716561184190</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1716631011744</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1716631011745</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"4\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"добавила callback для категорий не кофе и выпечка\" />\r\n    <MESSAGE value=\"Добавила сохранение tg id\" />\r\n    <MESSAGE value=\"Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 3cc966dbfe0baa757d8a3fe44d9845082d9819bd)
++++ b/.idea/workspace.xml	(date 1716664339491)
+@@ -4,7 +4,15 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="8857a5f7-73f6-4d31-8d73-04646a75478c" name="Changes" comment="Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!" />
++    <list default="true" id="8857a5f7-73f6-4d31-8d73-04646a75478c" name="Changes" comment="Добавила сохранение tg id">
++      <change afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/sqlite/sqlite.py" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/database/models.py" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/database/requests.py" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/app/handlers.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers.py" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -80,7 +88,7 @@
+       <workItem from="1716491349309" duration="474000" />
+       <workItem from="1716555453352" duration="5583000" />
+       <workItem from="1716579843588" duration="239000" />
+-      <workItem from="1716623462456" duration="7339000" />
++      <workItem from="1716623462456" duration="6975000" />
+     </task>
+     <task id="LOCAL-00001" summary="добавила callback для категорий не кофе и выпечка">
+       <option name="closed" value="true" />
+@@ -98,15 +106,7 @@
+       <option name="project" value="LOCAL" />
+       <updated>1716561184190</updated>
+     </task>
+-    <task id="LOCAL-00003" summary="Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!">
+-      <option name="closed" value="true" />
+-      <created>1716631011744</created>
+-      <option name="number" value="00003" />
+-      <option name="presentableId" value="LOCAL-00003" />
+-      <option name="project" value="LOCAL" />
+-      <updated>1716631011745</updated>
+-    </task>
+-    <option name="localTasksCounter" value="4" />
++    <option name="localTasksCounter" value="3" />
+     <servers />
+   </component>
+   <component name="TypeScriptGeneratedFilesManager">
+@@ -126,7 +126,6 @@
+   <component name="VcsManagerConfiguration">
+     <MESSAGE value="добавила callback для категорий не кофе и выпечка" />
+     <MESSAGE value="Добавила сохранение tg id" />
+-    <MESSAGE value="Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!" />
+-    <option name="LAST_COMMIT_MESSAGE" value="Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!" />
++    <option name="LAST_COMMIT_MESSAGE" value="Добавила сохранение tg id" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Checkout_at_25_05_2024_14_43__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_05_2024_14_43__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_05_2024_14_43__Changes_.xml
+new file mode 100644
+--- /dev/null	(date 1716664313805)
++++ b/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_05_2024_14_43__Changes_.xml	(date 1716664313805)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Checkout_at_25_05_2024_14_43_[Changes]" date="1716637419979" recycled="true" deleted="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_05_2024_14_43_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Checkout at 25.05.2024 14:43 [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: .idea/sqldialects.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"SqlDialectMappings\">\r\n    <file url=\"file://$PROJECT_DIR$/sqlite/sqlite.py\" dialect=\"GenericSQL\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/sqldialects.xml b/.idea/sqldialects.xml
+--- a/.idea/sqldialects.xml	(revision 3cc966dbfe0baa757d8a3fe44d9845082d9819bd)
++++ b/.idea/sqldialects.xml	(date 1716664313807)
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+   <component name="SqlDialectMappings">
+-    <file url="file://$PROJECT_DIR$/sqlite/sqlite.py" dialect="GenericSQL" />
++    <file url="file://$PROJECT_DIR$/sqlite/database.py" dialect="GenericSQL" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30_[Changes]/shelved.patch
+new file mode 100644
+--- /dev/null	(date 1716664313806)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_25_05_2024_16_30_[Changes]/shelved.patch	(date 1716664313806)
+@@ -0,0 +1,220 @@
++Index: app/handlers.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>from aiogram import F, Router, Dispatcher\r\nfrom aiogram.types import Message, CallbackQuery\r\nfrom aiogram.filters import CommandStart, Command\r\nfrom aiogram.fsm.state import State, StatesGroup\r\nfrom aiogram.fsm.context import FSMContext\r\n\r\nimport app.keyboards as kb\r\nfrom sqlite.sqlite import db_start, create_profile, save_to_db\r\n\r\nrouter = Router()\r\n\r\nclass Register(StatesGroup):\r\n    name = State()\r\n    age = State()\r\n    phone_number = State()\r\n\r\n@router.message(CommandStart())\r\nasync def cmd_start(message: Message):\r\n    await message.answer(f'Добро пожаловать, {message.from_user.first_name} !'\r\n                         f' Вас приветствует телеграмм-бот кофейни-пекарни \"Перемена\".')\r\n\r\n\r\n\r\n@router.message(Command('help'))\r\nasync def cmd_help(message: Message):\r\n    await message.answer('Вы нажали на кнопку помощи!')\r\n\r\n@router.message(Command('catalog'))\r\nasync def cmd_help(message: Message):\r\n    await message.answer(f'Выберите интересующий вас раздел \uD83D\uDC47', reply_markup=kb.main)\r\n\r\n@router.message(F.text == 'Меню')\r\nasync def menu(message: Message):\r\n    await message.answer('Сделайте выбор: ', reply_markup=kb.menu)\r\n\r\n@router.callback_query(F.data == 'coffee')\r\nasync def coffee(callback: CallbackQuery):\r\n    await callback.answer('Вы выбрали категорию')\r\n    await callback.message.answer('Вы выбрали категорию кофе')\r\n\r\n@router.callback_query(F.data == 'not coffee')\r\nasync def coffee(callback: CallbackQuery):\r\n    await callback.answer('Вы выбрали категорию')\r\n    await callback.message.answer('Вы выбрали категорию не кофе')\r\n\r\n@router.callback_query(F.data == 'bakery')\r\nasync def coffee(callback: CallbackQuery):\r\n    await callback.answer('Вы выбрали категорию')\r\n    await callback.message.answer('Вы выбрали категорию выпечка')\r\n\r\n@router.message(Command('register'))\r\nasync def register(message: Message, state: FSMContext):\r\n    await create_profile(user_id=message.from_user.id)\r\n    await state.set_state(Register.name)\r\n    await message.answer('Введите ваше имя')\r\n\r\n\r\n@router.message(Register.name)\r\nasync def register_name(message: Message, state: FSMContext):\r\n    await state.update_data(name=message.text)\r\n    await state.set_state(Register.age)\r\n    await message.answer('Введите ваш возраст')\r\n\r\n\r\n@router.message(Register.age)\r\nasync def register_age(message: Message, state: FSMContext):\r\n    await state.update_data(age=message.text)\r\n    await state.set_state(Register.phone_number)\r\n    await message.answer('Отправьте ваш номер телефона', reply_markup=kb.get_number)\r\n\r\n\r\n@router.message(Register.phone_number, F.contact)\r\nasync def register_number(message: Message, state: FSMContext):\r\n    await state.update_data(phone_number=message.contact.phone_number)\r\n    data = await state.get_data()\r\n    await message.answer(f'Ваше имя: {data[\"name\"]}\\nВаш возраст: {data[\"age\"]}\\nВаш номер телефона: {data[\"phone_number\"]}\\n')\r\n    await save_to_db(data)\r\n    await state.clear()\r\n\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/app/handlers.py b/app/handlers.py
++--- a/app/handlers.py	(revision 1e85b21c58fbc942c11f0383c7e7c465d817af02)
+++++ b/app/handlers.py	(date 1716643785496)
++@@ -16,17 +16,14 @@
++ 
++ @router.message(CommandStart())
++ async def cmd_start(message: Message):
++-    await message.answer(f'Добро пожаловать, {message.from_user.first_name} !'
++-                         f' Вас приветствует телеграмм-бот кофейни-пекарни "Перемена".')
++-
++-
+++    await message.answer(f'Добро пожаловать, {message.from_user.first_name} Вас приветствует телеграмм-бот кофейни-пекарни "Перемена".')
++ 
++ @router.message(Command('help'))
++ async def cmd_help(message: Message):
++     await message.answer('Вы нажали на кнопку помощи!')
++ 
++ @router.message(Command('catalog'))
++-async def cmd_help(message: Message):
+++async def cmd_catalog(message: Message):
++     await message.answer(f'Выберите интересующий вас раздел 👇', reply_markup=kb.main)
++ 
++ @router.message(F.text == 'Меню')
++@@ -34,17 +31,17 @@
++     await message.answer('Сделайте выбор: ', reply_markup=kb.menu)
++ 
++ @router.callback_query(F.data == 'coffee')
++-async def coffee(callback: CallbackQuery):
+++async def coffee_callback(callback: CallbackQuery):
++     await callback.answer('Вы выбрали категорию')
++     await callback.message.answer('Вы выбрали категорию кофе')
++ 
++ @router.callback_query(F.data == 'not coffee')
++-async def coffee(callback: CallbackQuery):
+++async def not_coffee_callback(callback: CallbackQuery):
++     await callback.answer('Вы выбрали категорию')
++     await callback.message.answer('Вы выбрали категорию не кофе')
++ 
++ @router.callback_query(F.data == 'bakery')
++-async def coffee(callback: CallbackQuery):
+++async def bakery_callback(callback: CallbackQuery):
++     await callback.answer('Вы выбрали категорию')
++     await callback.message.answer('Вы выбрали категорию выпечка')
++ 
++@@ -54,26 +51,22 @@
++     await state.set_state(Register.name)
++     await message.answer('Введите ваше имя')
++ 
++-
++ @router.message(Register.name)
++ async def register_name(message: Message, state: FSMContext):
++     await state.update_data(name=message.text)
++     await state.set_state(Register.age)
++     await message.answer('Введите ваш возраст')
++ 
++-
++ @router.message(Register.age)
++ async def register_age(message: Message, state: FSMContext):
++-    await state.update_data(age=message.text)
+++    await state.update_data(age=int(message.text))
++     await state.set_state(Register.phone_number)
++     await message.answer('Отправьте ваш номер телефона', reply_markup=kb.get_number)
++ 
++-
++ @router.message(Register.phone_number, F.contact)
++-async def register_number(message: Message, state: FSMContext):
+++async def register_phone_number(message: Message, state: FSMContext):
++     await state.update_data(phone_number=message.contact.phone_number)
++     data = await state.get_data()
++     await message.answer(f'Ваше имя: {data["name"]}\nВаш возраст: {data["age"]}\nВаш номер телефона: {data["phone_number"]}\n')
++     await save_to_db(data)
++     await state.clear()
++-
++Index: sqlite/sqlite.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>import asyncio\r\nimport aiosqlite\r\n\r\nasync def db_start():\r\n    async with aiosqlite.connect('new.db') as db:\r\n        await db.execute(\"\"\"\r\n            CREATE TABLE IF NOT EXISTS profile (\r\n                user_id TEXT PRIMARY KEY,\r\n                name TEXT,\r\n                age TEXT,\r\n                phone_number TEXT\r\n            )\r\n        \"\"\")\r\n        await db.commit()\r\n\r\nasync def create_profile(user_id):\r\n    async with aiosqlite.connect('new.db') as db:\r\n        cursor = await db.cursor()\r\n        user = await cursor.execute(\"SELECT 1 FROM profile WHERE user_id=?\", (user_id,))\r\n        result = await user.fetchone()\r\n        if not result:\r\n            await cursor.execute(\"INSERT INTO profile VALUES (?,?,?,?)\",\r\n                                 (user_id, '', '', ''))\r\n            await db.commit()\r\n\r\nasync def save_to_db(data):\r\n    async with aiosqlite.connect('new.db') as db:\r\n        await db.execute('''CREATE TABLE IF NOT EXISTS users\r\n                            (id INTEGER PRIMARY KEY AUTOINCREMENT, \r\n                             name TEXT, age INTEGER, phone_number TEXT)''')\r\n        await db.execute('''INSERT INTO users (name, age, phone_number) VALUES (?,?,?)''',\r\n                          (data['name'], data['age'], data['phone_number']))\r\n        await db.commit()
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/sqlite/sqlite.py b/sqlite/sqlite.py
++--- a/sqlite/sqlite.py	(revision 1e85b21c58fbc942c11f0383c7e7c465d817af02)
+++++ b/sqlite/sqlite.py	(date 1716643736619)
++@@ -1,33 +1,37 @@
++ import asyncio
+++
++ import aiosqlite
++ 
+++
++ async def db_start():
++     async with aiosqlite.connect('new.db') as db:
++-        await db.execute("""
++-            CREATE TABLE IF NOT EXISTS profile (
++-                user_id TEXT PRIMARY KEY,
++-                name TEXT,
++-                age TEXT,
++-                phone_number TEXT
++-            )
++-        """)
+++        await db.execute("\n"
+++                         "            CREATE TABLE IF NOT EXISTS users (\n"
+++                         "                user_id TEXT PRIMARY KEY,\n"
+++                         "                name TEXT,\n"
+++                         "                age TEXT,\n"
+++                         "                phone_number TEXT,\n"
+++                         "            )\n"
+++                         "        ")
++         await db.commit()
++ 
+++
++ async def create_profile(user_id):
++     async with aiosqlite.connect('new.db') as db:
++         cursor = await db.cursor()
++-        user = await cursor.execute("SELECT 1 FROM profile WHERE user_id=?", (user_id,))
+++        user = await cursor.execute("SELECT 1 FROM users WHERE user_id=?", (user_id,))
++         result = await user.fetchone()
++         if not result:
++-            await cursor.execute("INSERT INTO profile VALUES (?,?,?,?)",
+++            await cursor.execute("INSERT INTO users VALUES (?,?,?,?)",
++                                  (user_id, '', '', ''))
++             await db.commit()
++ 
+++
++ async def save_to_db(data):
++     async with aiosqlite.connect('new.db') as db:
++         await db.execute('''CREATE TABLE IF NOT EXISTS users
++                             (id INTEGER PRIMARY KEY AUTOINCREMENT, 
++                              name TEXT, age INTEGER, phone_number TEXT)''')
++         await db.execute('''INSERT INTO users (name, age, phone_number) VALUES (?,?,?)''',
++-                          (data['name'], data['age'], data['phone_number']))
++-        await db.commit()
++\ No newline at end of file
+++                         (data['name'], data['age'], data['phone_number']))
+++        await db.commit()
++Index: .idea/workspace.xml
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"8857a5f7-73f6-4d31-8d73-04646a75478c\" name=\"Changes\" comment=\"Добавила сохранение tg id\">\r\n      <change afterPath=\"$PROJECT_DIR$/.idea/sqldialects.xml\" afterDir=\"false\" />\r\n      <change afterPath=\"$PROJECT_DIR$/sqlite/sqlite.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/app/database/models.py\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/app/database/requests.py\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/app/handlers.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/app/handlers.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/main.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/main.py\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Python Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"master\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;sergeesha&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/Itkotik1/change_tg_bot.git&quot;,\r\n    &quot;accountId&quot;: &quot;eaf99802-8647-44df-9baa-a8f47de47c39&quot;\r\n  }\r\n}</component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 1\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2grX7fsU7eAnChkIvIAH71lrlIG\" />\r\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"ASKED_ADD_EXTERNAL_FILES\": \"true\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"SHARE_PROJECT_CONFIGURATION_FILES\": \"true\",\r\n    \"git-widget-placeholder\": \"itkotik\",\r\n    \"node.js.detected.package.eslint\": \"true\",\r\n    \"node.js.detected.package.tslint\": \"true\",\r\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\r\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\r\n    \"nodejs_package_manager_path\": \"npm\",\r\n    \"vue.rearranger.settings.migration\": \"true\"\r\n  }\r\n}]]></component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-PY-241.14494.241\" />\r\n        <option value=\"bundled-python-sdk-0509580d9d50-28c9f5db9ffe-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.14494.241\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"8857a5f7-73f6-4d31-8d73-04646a75478c\" name=\"Changes\" comment=\"\" />\r\n      <created>1716456505867</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1716456505867</updated>\r\n      <workItem from=\"1716456506477\" duration=\"6062000\" />\r\n      <workItem from=\"1716491349309\" duration=\"474000\" />\r\n      <workItem from=\"1716555453352\" duration=\"5583000\" />\r\n      <workItem from=\"1716579843588\" duration=\"239000\" />\r\n      <workItem from=\"1716623462456\" duration=\"6975000\" />\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"добавила callback для категорий не кофе и выпечка\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1716466665975</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1716466665975</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"Добавила сохранение tg id\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1716561184190</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1716561184190</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"3\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"добавила callback для категорий не кофе и выпечка\" />\r\n    <MESSAGE value=\"Добавила сохранение tg id\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"Добавила сохранение tg id\" />\r\n  </component>\r\n</project>
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/.idea/workspace.xml b/.idea/workspace.xml
++--- a/.idea/workspace.xml	(revision 1e85b21c58fbc942c11f0383c7e7c465d817af02)
+++++ b/.idea/workspace.xml	(date 1716643515684)
++@@ -4,14 +4,10 @@
++     <option name="autoReloadType" value="SELECTIVE" />
++   </component>
++   <component name="ChangeListManager">
++-    <list default="true" id="8857a5f7-73f6-4d31-8d73-04646a75478c" name="Changes" comment="Добавила сохранение tg id">
++-      <change afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
++-      <change afterPath="$PROJECT_DIR$/sqlite/sqlite.py" afterDir="false" />
+++    <list default="true" id="8857a5f7-73f6-4d31-8d73-04646a75478c" name="Changes" comment="Изменила структуру базы данных, теперь можно сохранять данные с регистрации в базу данных!">
++       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++-      <change beforePath="$PROJECT_DIR$/app/database/models.py" beforeDir="false" />
++-      <change beforePath="$PROJECT_DIR$/app/database/requests.py" beforeDir="false" />
++       <change beforePath="$PROJECT_DIR$/app/handlers.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/handlers.py" afterDir="false" />
++-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+++      <change beforePath="$PROJECT_DIR$/sqlite/sqlite.py" beforeDir="false" afterPath="$PROJECT_DIR$/sqlite/sqlite.py" afterDir="false" />
++     </list>
++     <option name="SHOW_DIALOG" value="false" />
++     <option name="HIGHLIGHT_CONFLICTS" value="true" />
++@@ -28,7 +24,7 @@
++   <component name="Git.Settings">
++     <option name="RECENT_BRANCH_BY_REPOSITORY">
++       <map>
++-        <entry key="$PROJECT_DIR$" value="master" />
+++        <entry key="$PROJECT_DIR$" value="itkotik" />
++       </map>
++     </option>
++     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
++@@ -54,20 +50,20 @@
++     <option name="hideEmptyMiddlePackages" value="true" />
++     <option name="showLibraryContents" value="true" />
++   </component>
++-  <component name="PropertiesComponent"><![CDATA[{
++-  "keyToString": {
++-    "ASKED_ADD_EXTERNAL_FILES": "true",
++-    "RunOnceActivity.ShowReadmeOnStart": "true",
++-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
++-    "git-widget-placeholder": "itkotik",
++-    "node.js.detected.package.eslint": "true",
++-    "node.js.detected.package.tslint": "true",
++-    "node.js.selected.package.eslint": "(autodetect)",
++-    "node.js.selected.package.tslint": "(autodetect)",
++-    "nodejs_package_manager_path": "npm",
++-    "vue.rearranger.settings.migration": "true"
+++  <component name="PropertiesComponent">{
+++  &quot;keyToString&quot;: {
+++    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+++    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+++    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+++    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+++    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+++    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+++    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+++    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
++   }
++-}]]></component>
+++}</component>
++   <component name="SharedIndexes">
++     <attachedChunks>
++       <set>
++@@ -89,6 +85,8 @@
++       <workItem from="1716555453352" duration="5583000" />
++       <workItem from="1716579843588" duration="239000" />
++       <workItem from="1716623462456" duration="6975000" />
+++      <workItem from="1716640763867" duration="1841000" />
+++      <workItem from="1716643207358" duration="305000" />
++     </task>
++     <task id="LOCAL-00001" summary="добавила callback для категорий не кофе и выпечка">
++       <option name="closed" value="true" />
+Index: sqlite/database.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/sqlite/database.py b/sqlite/database.py
+new file mode 100644
+--- /dev/null	(date 1716664313809)
++++ b/sqlite/database.py	(date 1716664313809)
+@@ -0,0 +1,33 @@
++import asyncio
++import aiosqlite
++
++
++async def db_start():
++    async with aiosqlite.connect('new.db') as db:
++        await db.execute("""
++            CREATE TABLE IF NOT EXISTS users (
++                user_id TEXT PRIMARY KEY,
++                name TEXT,
++                age INTEGER,
++                phone_number TEXT
++            )
++        """)
++        await db.commit()
++
++
++async def register_or_update_user(user_id, name, age, phone_number):
++    async with aiosqlite.connect('new.db') as db:
++        cursor = await db.cursor()
++
++        user_exists = await cursor.execute("SELECT 1 FROM users WHERE user_id=?", (user_id,))
++        result = await user_exists.fetchone()
++
++        if not result:
++
++            await cursor.execute("INSERT INTO users VALUES (?,?,?,?)", (user_id, name, int(age), phone_number))
++        else:
++
++            await cursor.execute("UPDATE users SET name=?, age=?, phone_number=? WHERE user_id=?",
++                                 (name, int(age), phone_number, user_id))
++
++        await db.commit()
+Index: .idea/dataSources.local.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/dataSources.local.xml b/.idea/dataSources.local.xml
+new file mode 100644
+--- /dev/null	(date 1716664313804)
++++ b/.idea/dataSources.local.xml	(date 1716664313804)
+@@ -0,0 +1,10 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="dataSourceStorageLocal" created-in="PY-241.14494.241">
++    <data-source name="new" uuid="7a42cce5-28cc-4fdc-85ed-a4212b290a1c">
++      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="SQLITE" />
++      <auth-provider>no-auth</auth-provider>
++      <schema-mapping />
++    </data-source>
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/dataSources.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/dataSources.xml b/.idea/dataSources.xml
+new file mode 100644
+--- /dev/null	(date 1716664313804)
++++ b/.idea/dataSources.xml	(date 1716664313804)
+@@ -0,0 +1,12 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
++    <data-source source="LOCAL" name="new" uuid="7a42cce5-28cc-4fdc-85ed-a4212b290a1c">
++      <driver-ref>sqlite.xerial</driver-ref>
++      <synchronize>true</synchronize>
++      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
++      <jdbc-url>jdbc:sqlite:C:\Users\Катя\Desktop\COFFEE_SHOP\tg_bot\change_tg_bot\new.db</jdbc-url>
++      <working-dir>$ProjectFileDir$</working-dir>
++    </data-source>
++  </component>
++</project>
+\ No newline at end of file
+diff --git a/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_05_2024_14_43_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Checkout_at_25_05_2024_14_43_[Changes]/shelved.patch
+new file mode 100644

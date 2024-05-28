@@ -19,16 +19,16 @@ COFFEE_PHOTO_PATH = "./prices/list1.jpg"
 @router.message(CommandStart())
 async def cmd_start(message: types.Message):
     await message.answer(f'Добро пожаловать, {message.from_user.first_name}.\n'
-                         f'Вас приветствует телеграмм-бот кофейни-пекарни "Перемена".\n'
+                         f'Вас приветствует телеграмм-бот кофейни-пекарни "Перемена"😊\n'
                          f'Давайте познакомимся? Ведь приятно, когда обращаются по имени!\n'
                          f'Нажмите на /register')
 
 @router.message(Command('help'))
 async def cmd_help(message: types.Message):
-    await message.answer(f'Вы нажали на кнопку помощи  Вот команды для выбора действий: '
+    await message.answer(f'Вы нажали на кнопку помощи  Вот команды для выбора действий:\n '
                          "/register - регистрация\n"
                          "/help - список команд для выполнения действий\n"
-                         "/catalog - раздел с информацией")
+                         "/catalog - раздел с информацией\n")
 
 @router.message(Command('catalog'))
 async def cmd_catalog(message: types.Message):
@@ -36,11 +36,14 @@ async def cmd_catalog(message: types.Message):
 
 @router.message(F.text == 'О нас')
 async def about(message: types.Message):
-    await message.answer('Кофейня-пекарня "Перемена')
+    await message.answer('Название: Кофейня-пекарня "Перемена"\n'
+                         'Телефон: 8999999999\n'
+                         'Адрес: ул. Рязанский проспект 99A\n'
+                         'Время работы: 9:00-20:00\n')
 
 @router.message(F.text == 'Контакты')
 async def about(message: types.Message):
-    await message.answer('Наши контакты!!!')
+    await message.answer('Здесь будут наши контакты!!!')
 
 @router.message(F.text == 'Бонусы')
 async def bonus(message: types.Message):
